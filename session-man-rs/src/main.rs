@@ -1,3 +1,4 @@
+use futures::StreamExt;
 use std::{
     env::{self},
     error::Error,
@@ -6,30 +7,46 @@ use std::{
 };
 
 use actix_web::{App, HttpRequest, HttpResponse, HttpServer, post, web};
+use chromiumoxide::{
+    browser::{Browser, BrowserConfig},
+    cdp::browser_protocol::page::CaptureScreenshotFormat,
+};
 use env_logger::Env;
-use headless_chrome::{Browser, LaunchOptions, protocol::cdp::Page::CaptureScreenshotFormatOption};
 use log::info;
 
 #[derive(Clone)]
 struct AppState {
     browser: Arc<Browser>,
+    screenshot_dir: String,
 }
 
 #[actix_web::main]
 async fn main() -> Result<(), Box<dyn Error>> {
-    env_logger::Builder::from_env(Env::default().default_filter_or("info")).init();
-    let browser_opt = LaunchOptions {
-        window_size: Some((1025, 768)),
-        ..Default::default()
-    };
-    let browser = Browser::new(browser_opt)?;
+    let path = env::var("SCREENSHOT_PATH")?;
+    env_logger::Builder::from_env(Env::default().default_filter_or("debug")).init();
+
+    let (browser, mut handler) = Browser::launch(
+        BrowserConfig::builder()
+            .no_sandbox()
+            .new_headless_mode()
+            .window_size(1024, 728)
+            .build()?,
+    )
+    .await?;
+
+    // Spawn the handler loop — this is REQUIRED
+    tokio::task::spawn(async move {
+        loop {
+            let _ = handler.next().await.unwrap();
+        }
+    });
+
     let app_state = AppState {
         browser: Arc::new(browser),
+        screenshot_dir: path,
     };
 
     let http_server_config = ("0.0.0.0", 8080);
-
-    // info!("starting service {}:{}", http_server_config.0, http_server_config.1); 
 
     HttpServer::new(move || {
         App::new()
@@ -48,19 +65,24 @@ async fn screenshot(
     _req: HttpRequest,
     data: web::Data<AppState>,
 ) -> Result<HttpResponse, Box<dyn Error>> {
-    let path = env::var("SCREENSHOT_PATH")?;
-    let tab = data.browser.new_tab()?;
-    tab.navigate_to("https://webapp.generali.co.th/eHospital/login.jsp")?;
-    tab.wait_for_xpath("//input[@name='user_name']")?;
-
-    let png_data = tab.capture_screenshot(CaptureScreenshotFormatOption::Png, None, None, true)?;
-
-    let file_name = SystemTime::now().duration_since(UNIX_EPOCH)?;
-    let full_path = format!("{}/{}.png", path, file_name.as_secs());
-
-    println!("writing {}", full_path);
-
-    std::fs::write(full_path, png_data)?;
-
-    Ok(HttpResponse::Ok().finish())
+    info!("new comming request");
+    let png_data = data
+        .browser
+        .new_page("https://webapp.generali.co.th/eHospital/login.jsp")
+        .await?
+        .find_xpath("//input[@name='user_name']")
+        .await
+        .unwrap()
+        .click()
+        .await
+        .unwrap()
+        .type_str("Test")
+        .await?
+        .screenshot(CaptureScreenshotFormat::Png)
+        .await?;
+    let timestamp = SystemTime::now().duration_since(UNIX_EPOCH)?;
+    let filename = format!("{}/{}.png", data.screenshot_dir, timestamp.as_secs());
+    info!("Saved image {filename}");
+    tokio::fs::write(filename, png_data).await?;
+    Ok(HttpResponse::Ok().body(format!("Saved screenshot as {}", timestamp.as_secs())))
 }

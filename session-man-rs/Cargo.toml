@@ -5,8 +5,9 @@ edition = "2024"
 
 [dependencies]
 actix-web = "4.11.0"
+chromiumoxide = { version = "0.7.0", features = ["_fetcher-native-tokio", "tokio-runtime"] }
 chrono = "0.4.41"
 env_logger = "0.11.8"
-headless_chrome = { version = "1.0.17", features = ["fetch"] }
+futures = "0.3.31"
 log = "0.4.27"
 tokio = { version = "1.46.1", features = ["fs", "full", "signal"] }
