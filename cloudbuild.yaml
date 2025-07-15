@@ -1,0 +1,34 @@
+steps:
+  # Check formatting
+  - name: 'rust:1.78'
+    entrypoint: 'cargo'
+    args: ['fmt', '--', '--check']
+
+  # Run clippy
+  - name: 'rust:1.78'
+    entrypoint: 'cargo'
+    args: ['clippy', '--', '-D', 'warnings']
+
+  # Build the Rust application
+  - name: 'rust:1.78'
+    entrypoint: 'cargo'
+    args: ['build', '--release']
+    id: 'Build'
+
+  # Run tests
+  - name: 'rust:1.78'
+    entrypoint: 'cargo'
+    args: ['test']
+    id: 'Test'
+
+# Store the built binary as a build artifact
+artifacts:
+  objects:
+    location: 'gs://your-bucket-name/session-man-rs' # Please replace "your-bucket-name" with your actual GCS bucket name.
+    paths: ['target/release/session-man-rs']
+
+options:
+  # Cache cargo registry and build cache
+  volumes:
+  - name: 'cargo_cache'
+    path: '/root/.cargo'

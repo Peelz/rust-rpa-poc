@@ -1,0 +1,42 @@
+apiVersion: serving.knative.dev/v1
+kind: Service
+metadata:
+  name: poc-rust-rpa-v1
+  labels:
+    cloud.googleapis.com/location: asia-southeast1
+  annotations:
+    run.googleapis.com/ingress: all
+    run.googleapis.com/ingress-status: all
+spec:
+  template:
+    metadata:
+      labels:
+        run.googleapis.com/startupProbeType: Default
+      annotations:
+        run.googleapis.com/vpc-access-egress: private-ranges-only
+        autoscaling.knative.dev/maxScale: '100'
+        run.googleapis.com/vpc-access-connector: projects/tdg-dh-truehealth-core-nonprod/locations/asia-southeast1/connectors/default-serverless-vpc
+      name: poc-rust-rpa-v1-22696e4-1733130760
+    spec:
+      containerConcurrency: 80
+      timeoutSeconds: 300
+      serviceAccountName: biz-bbq-nacho@tdg-dh-truehealth-core-nonprod.iam.gserviceaccount.com
+      containers:
+        - image: asia-southeast1-docker.pkg.dev/tdg-dh-truehealth-core-nonprod/cossack-docker/poc-rust-rpa:latest
+          ports:
+            - name: http1
+              containerPort: 8080
+          env: {}
+          resources:
+            limits:
+              cpu: 2000m
+              memory: 4Gi
+          startupProbe:
+            timeoutSeconds: 240
+            periodSeconds: 240
+            failureThreshold: 1
+            tcpSocket:
+              port: 8080
+  traffic:
+    - percent: 100
+      latestRevision: true
