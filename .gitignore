@@ -38,4 +38,5 @@ report.[0-9]_.[0-9]_.[0-9]_.[0-9]_.json
 
 /target
 /storage/*
-!/storage/.gitkeep
+!.gitkeep
+download/mac_arm-1045629/chrome-mac/Chromium.app/Contents

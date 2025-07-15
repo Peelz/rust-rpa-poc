@@ -11,7 +11,6 @@ use chromiumoxide::{
     browser::{Browser, BrowserConfig},
     cdp::browser_protocol::page::CaptureScreenshotFormat,
 };
-use env_logger::Env;
 use log::info;
 
 #[derive(Clone)]
@@ -23,7 +22,17 @@ struct AppState {
 #[actix_web::main]
 async fn main() -> Result<(), Box<dyn Error>> {
     let path = env::var("SCREENSHOT_PATH")?;
-    env_logger::Builder::from_env(Env::default().default_filter_or("debug")).init();
+
+    // env_logger::Builder::from_env(Env::default().default_filter_or("debug")).init();
+    //
+    // let download_path = Path::new("./download");
+    // tokio::fs::create_dir_all(&download_path).await?;
+    // let fetcher = BrowserFetcher::new(
+    //     BrowserFetcherOptions::builder()
+    //         .with_path(download_path)
+    //         .build()?,
+    // );
+    // let _info = fetcher.fetch().await?;
 
     let (browser, mut handler) = Browser::launch(
         BrowserConfig::builder()
