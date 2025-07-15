@@ -30,6 +30,8 @@ FROM debian:12-slim
 # Set working directory
 WORKDIR /usr/local/bin
 
+RUN sudo apt update && sudo apt install chromium
+
 # Copy the built binary from the builder stage
 COPY --from=builder /usr/src/app/session-man-rs/target/release/session-man-rs .
 
