@@ -6,7 +6,9 @@ use std::{
 };
 
 use actix_web::{App, HttpRequest, HttpResponse, HttpServer, post, web};
+use env_logger::Env;
 use headless_chrome::{Browser, LaunchOptions, protocol::cdp::Page::CaptureScreenshotFormatOption};
+use log::info;
 
 #[derive(Clone)]
 struct AppState {
@@ -15,6 +17,7 @@ struct AppState {
 
 #[actix_web::main]
 async fn main() -> Result<(), Box<dyn Error>> {
+    env_logger::Builder::from_env(Env::default().default_filter_or("info")).init();
     let browser_opt = LaunchOptions {
         window_size: Some((1025, 768)),
         ..Default::default()
@@ -24,14 +27,18 @@ async fn main() -> Result<(), Box<dyn Error>> {
         browser: Arc::new(browser),
     };
 
+    let http_server_config = ("0.0.0.0", 8080);
+
+    // info!("starting service {}:{}", http_server_config.0, http_server_config.1); 
+
     HttpServer::new(move || {
         App::new()
             .app_data(web::Data::new(app_state.clone()))
             .service(screenshot)
     })
-    .bind(("0.0.0.0", 8080))?
+    .bind(http_server_config)?
     .run()
-    .await;
+    .await?;
 
     Ok(())
 }
