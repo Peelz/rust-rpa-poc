@@ -1,8 +1,13 @@
-use std::error::Error;
+use std::{
+    env::{self},
+    error::Error,
+    time::{SystemTime, UNIX_EPOCH},
+};
 
 use headless_chrome::{Browser, LaunchOptions, protocol::cdp::Page::CaptureScreenshotFormatOption};
 
 fn main() -> Result<(), Box<dyn Error>> {
+    let path = env::var("SCREENSHOT_PATH")?;
     let browser_opt = LaunchOptions {
         window_size: Some((1025, 768)),
         ..Default::default()
@@ -17,7 +22,9 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     let png_data = tab.capture_screenshot(CaptureScreenshotFormatOption::Png, None, None, true)?;
 
-    std::fs::write("screenshot.png", png_data)?;
+    let file_name = SystemTime::now().duration_since(UNIX_EPOCH)?;
+
+    std::fs::write(format!("{}/{}.png", path, file_name.as_secs()), png_data)?;
 
     Ok(())
 }

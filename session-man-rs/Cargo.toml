@@ -4,6 +4,6 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-fantoccini = "0.22.0"
+chrono = "0.4.41"
 headless_chrome = { version = "1.0.17", features = ["fetch"] }
 tokio = { version = "1.46.1", features = ["fs", "full", "signal"] }
