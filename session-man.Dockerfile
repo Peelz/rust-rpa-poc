@@ -25,7 +25,7 @@ RUN rm ./target/release/deps/session_man_rs* # remove dummy build artifacts
 RUN cargo build --release
 
 # ---- Final Stage ----
-FROM gcr.io/distroless/base-debian12
+FROM gcr.io/distroless/cc-debian12
 
 # Set working directory
 WORKDIR /usr/local/bin
