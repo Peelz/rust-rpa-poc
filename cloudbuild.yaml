@@ -1,34 +1,32 @@
 steps:
   # Check formatting
-  - name: 'rust:1.78'
-    entrypoint: 'cargo'
-    args: ['fmt', '--', '--check']
-
-  # Run clippy
-  - name: 'rust:1.78'
-    entrypoint: 'cargo'
-    args: ['clippy', '--', '-D', 'warnings']
-
-  # Build the Rust application
-  - name: 'rust:1.78'
-    entrypoint: 'cargo'
-    args: ['build', '--release']
-    id: 'Build'
-
-  # Run tests
-  - name: 'rust:1.78'
-    entrypoint: 'cargo'
-    args: ['test']
-    id: 'Test'
+  - name: "gcr.io/cloud-builders/docker"
+    args:
+      - build
+      - -t
+      - asia-southeast1-docker.pkg.dev/tdg-dh-truehealth-core-nonprod/cossack-docker/poc-rust-rpa
+      - -f
+      - session-man.Dockerfile
+      - .
+  # - name: "gcr.io/cloud-builders/docker"
+  #   args:
+  #     [
+  #       "push",
+  #       "asia-southeast1-docker.pkg.dev/tdg-dh-truehealth-core-nonprod/cossack-docker/poc-rust-rpa",
+  #     ]
 
 # Store the built binary as a build artifact
-artifacts:
-  objects:
-    location: 'gs://your-bucket-name/session-man-rs' # Please replace "your-bucket-name" with your actual GCS bucket name.
-    paths: ['target/release/session-man-rs']
+# artifacts:
+#   objects:
+#     location: "gs://your-bucket-name/session-man-rs" # Please replace "your-bucket-name" with your actual GCS bucket name.
+#     paths: ["target/release/session-man-rs"]
+images:
+  - "asia-southeast1-docker.pkg.dev/tdg-dh-truehealth-core-nonprod/cossack-docker/poc-rust-rpa"
 
 options:
+  machineType: E2_HIGHCPU_8
   # Cache cargo registry and build cache
-  volumes:
-  - name: 'cargo_cache'
-    path: '/root/.cargo'
+  # volumes:
+  #   - name: "cargo_cache"
+  #     path: "/root/.cargo"
+
