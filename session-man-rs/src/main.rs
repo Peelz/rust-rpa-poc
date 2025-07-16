@@ -1,3 +1,4 @@
+use env_logger::Env;
 use futures::StreamExt;
 use std::{
     env::{self},
@@ -23,8 +24,8 @@ struct AppState {
 async fn main() -> Result<(), Box<dyn Error>> {
     let path = env::var("SCREENSHOT_PATH")?;
 
-    // env_logger::Builder::from_env(Env::default().default_filter_or("debug")).init();
-    //
+    env_logger::Builder::from_env(Env::default().default_filter_or("debug")).init();
+    
     // let download_path = Path::new("./download");
     // tokio::fs::create_dir_all(&download_path).await?;
     // let fetcher = BrowserFetcher::new(
