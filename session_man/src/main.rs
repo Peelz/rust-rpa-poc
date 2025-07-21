@@ -3,6 +3,7 @@ use futures::StreamExt;
 use std::{
     env::{self},
     error::Error,
+    path::Path,
     sync::Arc,
     time::{SystemTime, UNIX_EPOCH},
 };
@@ -25,7 +26,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let path = env::var("SCREENSHOT_PATH")?;
 
     env_logger::Builder::from_env(Env::default().default_filter_or("debug")).init();
-    
+
     // let download_path = Path::new("./download");
     // tokio::fs::create_dir_all(&download_path).await?;
     // let fetcher = BrowserFetcher::new(
@@ -34,6 +35,12 @@ async fn main() -> Result<(), Box<dyn Error>> {
     //         .build()?,
     // );
     // let _info = fetcher.fetch().await?;
+
+    info!("check screenshot path {path}");
+
+    if !Path::new(&path).exists() {
+        panic!("screen path {path} not exist")
+    }
 
     let (browser, mut handler) = Browser::launch(
         BrowserConfig::builder()
@@ -93,6 +100,8 @@ async fn screenshot(
     let timestamp = SystemTime::now().duration_since(UNIX_EPOCH)?;
     let filename = format!("{}/{}.png", data.screenshot_dir, timestamp.as_secs());
     info!("Saved image {filename}");
+
     tokio::fs::write(filename, png_data).await?;
+
     Ok(HttpResponse::Ok().body(format!("Saved screenshot as {}", timestamp.as_secs())))
 }
