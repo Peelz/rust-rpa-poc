@@ -8,6 +8,10 @@ steps:
       - -f
       - session-man.Dockerfile
       - .
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: gcloud
+    args: ['run', 'deploy', 'poc-rust-rpa', '--image', 'asia-southeast1-docker.pkg.dev/tdg-dh-truehealth-core-nonprod/cossack-docker/poc-rust-rpa', '--region', 'asia-southeast1']
+
   # - name: "gcr.io/cloud-builders/docker"
   #   args:
   #     [

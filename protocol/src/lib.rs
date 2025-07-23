@@ -1,4 +1,3 @@
-pub mod binding;
-pub mod category;
-pub mod eligibility;
 pub mod gcp;
+pub mod iam;
+pub mod biz_priv;

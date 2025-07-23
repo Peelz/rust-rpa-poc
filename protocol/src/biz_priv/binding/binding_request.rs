@@ -1,5 +1,6 @@
-use crate::binding::binding_data::BindingData;
 use serde::{Deserialize, Serialize};
+
+use super::BindingData;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]

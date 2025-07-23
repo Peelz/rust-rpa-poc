@@ -1,4 +1,5 @@
 use serde::Deserialize;
+use std::collections::HashMap;
 
 #[derive(Debug, Deserialize)]
 pub struct PubSubPushMessage {
@@ -10,5 +11,5 @@ pub struct PubSubPushMessage {
 pub struct PubSubMessage {
     pub data: String,
     pub message_id: String,
-    pub attributes: Option<std::collections::HashMap<String, String>>,
+    pub attributes: Option<HashMap<String, String>>,
 }
