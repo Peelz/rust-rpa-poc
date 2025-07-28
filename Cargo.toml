@@ -5,4 +5,4 @@
 
 [workspace]
 resolver = "3"
-members = ["session_man", "protocol", "binding", "coverage", "claim"]
+members = ["session_man", "binding", "coverage", "claim", "common"]

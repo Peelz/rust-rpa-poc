@@ -1,107 +1,89 @@
-use env_logger::Env;
-use futures::StreamExt;
-use std::{
-    env::{self},
-    error::Error,
-    path::Path,
-    sync::Arc,
-    time::{SystemTime, UNIX_EPOCH},
-};
-
-use actix_web::{App, HttpRequest, HttpResponse, HttpServer, post, web};
 use chromiumoxide::{
     browser::{Browser, BrowserConfig},
-    cdp::browser_protocol::page::CaptureScreenshotFormat,
+    cdp::browser_protocol::{network::Cookie, page::CaptureScreenshotFormat},
+    page::ScreenshotParams,
 };
-use log::info;
+use chrono::Utc;
+use config::{ApplicationConfig, PortalConfig};
+use env_logger::Env;
+use futures::{StreamExt, future::ok};
+use std::io::Write;
+use std::{fs::File, path::Path};
 
-#[derive(Clone)]
-struct AppState {
-    browser: Arc<Browser>,
-    screenshot_dir: String,
-}
+use log::{error, info};
+mod config;
+mod rpa;
 
-#[actix_web::main]
-async fn main() -> Result<(), Box<dyn Error>> {
-    let path = env::var("SCREENSHOT_PATH")?;
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let app_conf: ApplicationConfig = envy::from_env()
+        .expect("Failed to deserialize config from environment variables");
 
-    env_logger::Builder::from_env(Env::default().default_filter_or("debug")).init();
+    let portal_conf: PortalConfig = envy::prefixed("PORTAL_")
+        .from_env()
+        .expect("Failed to deserialize config from environment variables");
 
-    // let download_path = Path::new("./download");
-    // tokio::fs::create_dir_all(&download_path).await?;
-    // let fetcher = BrowserFetcher::new(
-    //     BrowserFetcherOptions::builder()
-    //         .with_path(download_path)
-    //         .build()?,
-    // );
-    // let _info = fetcher.fetch().await?;
+    env_logger::Builder::from_env(Env::default().default_filter_or("debug"))
+        .init();
 
-    info!("check screenshot path {path}");
-
-    if !Path::new(&path).exists() {
-        panic!("screen path {path} not exist")
+    if !Path::new(&app_conf.screenshot_path).exists() {
+        panic!("screen path {} not exist", app_conf.screenshot_path)
     }
 
     let (browser, mut handler) = Browser::launch(
         BrowserConfig::builder()
             .no_sandbox()
+            // .with_head()
             .new_headless_mode()
             .window_size(1024, 728)
             .build()?,
     )
     .await?;
 
+    info!("start browser");
     // Spawn the handler loop — this is REQUIRED
     tokio::task::spawn(async move {
         loop {
             let _ = handler.next().await.unwrap();
         }
     });
+    let page = browser.new_page(&portal_conf.url).await?;
 
-    let app_state = AppState {
-        browser: Arc::new(browser),
-        screenshot_dir: path,
+    match rpa::run(portal_conf, page.clone()).await {
+        Ok(cookies) => {
+            let file_name =
+                format!("{}/cookie-latest.json", app_conf.session_storage_path);
+            let mut file = File::create(&file_name)?;
+            let cookie_json = serde_json::to_string_pretty(&cookies)?;
+            file.write_all(cookie_json.as_bytes())?
+        }
+        Err(e) => {
+            error!("Result failed, trying to capture image page: {e}");
+            page.screenshot(
+                ScreenshotParams::builder()
+                    .format(CaptureScreenshotFormat::Png)
+                    .build(),
+            )
+            .await
+            .map(|s| {
+                let filename = Utc::now()
+                    .format("session_man_error_%Y%m%d-%H%M%S.png")
+                    .to_string();
+                let full_path =
+                    format!("{}/{filename}", app_conf.screenshot_path);
+                match File::create(full_path.clone()) {
+                    Ok(mut file) => match file.write_all(&s) {
+                        Ok(_) => info!("Wrote file {full_path} success"),
+                        Err(e) => error!("Save screenshot error {e}"),
+                    },
+                    Err(e) => {
+                        error!(":/ {e}")
+                    }
+                }
+            })
+            .inspect_err(|e| error!("Err: {e}"))
+            .ok();
+        }
     };
-
-    let http_server_config = ("0.0.0.0", 8080);
-
-    HttpServer::new(move || {
-        App::new()
-            .app_data(web::Data::new(app_state.clone()))
-            .service(screenshot)
-    })
-    .bind(http_server_config)?
-    .run()
-    .await?;
-
     Ok(())
-}
-
-#[post("/screenshot")]
-async fn screenshot(
-    _req: HttpRequest,
-    data: web::Data<AppState>,
-) -> Result<HttpResponse, Box<dyn Error>> {
-    info!("new comming request");
-    let png_data = data
-        .browser
-        .new_page("https://webapp.generali.co.th/eHospital/login.jsp")
-        .await?
-        .find_xpath("//input[@name='user_name']")
-        .await
-        .unwrap()
-        .click()
-        .await
-        .unwrap()
-        .type_str("Test")
-        .await?
-        .screenshot(CaptureScreenshotFormat::Png)
-        .await?;
-    let timestamp = SystemTime::now().duration_since(UNIX_EPOCH)?;
-    let filename = format!("{}/{}.png", data.screenshot_dir, timestamp.as_secs());
-    info!("Saved image {filename}");
-
-    tokio::fs::write(filename, png_data).await?;
-
-    Ok(HttpResponse::Ok().body(format!("Saved screenshot as {}", timestamp.as_secs())))
 }

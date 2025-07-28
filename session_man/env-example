@@ -1,0 +1,5 @@
+PORTAL_URL=https://webapp.generali.co.th
+PORTAL_USER_NAME=!changeme
+PORTAL_USER_PASSWORD=!changeme
+SCREENSHOT_PATH=/path/to/dir/screenshot
+SESSION_STORAGE_PATH=/path/to/dir/session
