@@ -1,6 +1,7 @@
 use serde::{Deserialize, Serialize};
 
-use crate::biz_priv::{binding::BindingData, category::Category};
+use crate::protocol::biz_priv::{binding::binding_data::BindingData, category::Category};
+
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct CheckEliRequest {

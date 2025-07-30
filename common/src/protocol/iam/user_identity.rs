@@ -22,3 +22,9 @@ pub struct LegacyData {
     scopes: String,
     role_code: String,
 }
+
+#[derive(Debug)]
+pub struct PartialUserIdentity {
+    pub user_account_id: u64,
+    pub user_profile_id: u64,
+}

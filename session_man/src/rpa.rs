@@ -1,17 +1,10 @@
 use std::error::Error;
 use std::fmt;
-use std::fs::File;
-use std::io::Write;
 use std::time::Duration;
 
-use chromiumoxide::cdp::browser_protocol::page::CaptureScreenshotFormat;
-
 use chromiumoxide::Page;
-use chromiumoxide::page::ScreenshotParams;
 use chromiumoxide::{cdp::browser_protocol::network::Cookie, error::CdpError};
-use futures::FutureExt;
 use log::{debug, error, info};
-use tokio::fs;
 use tokio::time::sleep;
 
 use crate::config::PortalConfig;

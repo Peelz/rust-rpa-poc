@@ -1,5 +1,6 @@
 use std::error::Error;
 
+use common::gcp::pubsub::PublisherConfig;
 use config::{Config, Environment};
 use dotenvy::dotenv;
 use serde::Deserialize;
@@ -27,12 +28,17 @@ impl PostgresConfig {
     }
 }
 
+
 #[derive(Debug, Clone, Deserialize)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 pub struct ApplicationConfig {
     pub portal_url: String,
+    pub session_path: String,
     pub http_server_port: u16,
     pub postgres: PostgresConfig,
+    pub gcp_project_id: String,
+    pub gcp_binding_result_topic: String,
+    pub gcp_pubsub_emulator: bool,
 }
 
 pub fn load_env() -> Result<ApplicationConfig, Box<dyn Error>> {

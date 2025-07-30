@@ -4,33 +4,25 @@ steps:
     args:
       - build
       - -t
-      - asia-southeast1-docker.pkg.dev/tdg-dh-truehealth-core-nonprod/cossack-docker/poc-rust-rpa
+      - asia-southeast1-docker.pkg.dev/tdg-dh-truehealth-core-nonprod/cossack-docker/biz-priv-plug-generali
       - -f
       - session-man.Dockerfile
       - .
-  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
-    entrypoint: gcloud
-    args: ['run', 'deploy', 'poc-rust-rpa', '--image', 'asia-southeast1-docker.pkg.dev/tdg-dh-truehealth-core-nonprod/cossack-docker/poc-rust-rpa', '--region', 'asia-southeast1']
-
-  # - name: "gcr.io/cloud-builders/docker"
+  # - name: "gcr.io/google.com/cloudsdktool/cloud-sdk"
+  #   entrypoint: gcloud
   #   args:
   #     [
-  #       "push",
+  #       "run",
+  #       "deploy",
+  #       "poc-rust-rpa",
+  #       "--image",
   #       "asia-southeast1-docker.pkg.dev/tdg-dh-truehealth-core-nonprod/cossack-docker/poc-rust-rpa",
+  #       "--region",
+  #       "asia-southeast1",
   #     ]
 
-# Store the built binary as a build artifact
-# artifacts:
-#   objects:
-#     location: "gs://your-bucket-name/session-man-rs" # Please replace "your-bucket-name" with your actual GCS bucket name.
-#     paths: ["target/release/session-man-rs"]
 images:
-  - "asia-southeast1-docker.pkg.dev/tdg-dh-truehealth-core-nonprod/cossack-docker/poc-rust-rpa"
+  - "asia-southeast1-docker.pkg.dev/tdg-dh-truehealth-core-nonprod/cossack-docker/biz-priv-plug-generali"
 
 options:
   machineType: E2_HIGHCPU_8
-  # Cache cargo registry and build cache
-  # volumes:
-  #   - name: "cargo_cache"
-  #     path: "/root/.cargo"
-
