@@ -16,7 +16,7 @@ pub struct UserIdentity {
 #[serde(rename_all = "camelCase")]
 pub struct LegacyData {
     user_id: String,
-    uid: u64,
+    uid: i32,
     client_id: String,
     client_int_id: u64,
     scopes: String,
@@ -25,6 +25,6 @@ pub struct LegacyData {
 
 #[derive(Debug)]
 pub struct PartialUserIdentity {
-    pub user_account_id: u64,
-    pub user_profile_id: u64,
+    pub user_account_id: i32,
+    pub user_profile_id: i32,
 }

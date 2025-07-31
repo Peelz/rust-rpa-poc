@@ -7,7 +7,7 @@ use super::privilege::PrivilegeData;
 pub enum BindingResult {
     #[serde(rename = "CompletedBinding")]
     CompletedBinding {
-        binding_id: i64,
+        binding_id: i32,
         privilege_id: i32,
         privilege_ref_id: Option<String>,
         account_id: i32,
@@ -21,7 +21,7 @@ pub enum BindingResult {
 
     #[serde(rename = "RejectedBinding")]
     RejectedBinding {
-        binding_id: i64,
+        binding_id: i32,
         reason: RejectedReason,
         detail: String,
         privilege_data: PrivilegeData,
@@ -29,7 +29,7 @@ pub enum BindingResult {
 
     #[serde(rename = "FailedBinding")]
     FailedBinding {
-        binding_id: i64,
+        binding_id: i32,
         reason: FailedReason,
         detail: String,
         privilege_data: PrivilegeData,
@@ -65,4 +65,12 @@ pub enum FailedReason {
     MordeeServerError,
     #[serde(rename = "OTHERS")]
     Others,
+}
+
+impl TryInto<Vec<u8>> for BindingResult {
+    type Error = serde_json::Error;
+
+    fn try_into(self) -> Result<Vec<u8>, Self::Error> {
+        serde_json::to_vec(&self)
+    }
 }

@@ -4,10 +4,10 @@ use super::{binding_data::BindingData, privilege::PrivilegeData};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct BindingRequestEvent {
-    pub privilege_id: u64,
-    pub binding_id: u64,
-    pub account_id: u64,
-    pub profile_id: u64,
+    pub privilege_id: i32,
+    pub binding_id: i32,
+    pub account_id: i32,
+    pub profile_id: i32,
     pub accepted_consent_ref: String,
     pub binding_data: BindingData,
     pub encrypted_binding_data: String,

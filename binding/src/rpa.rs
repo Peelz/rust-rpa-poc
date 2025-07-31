@@ -49,6 +49,7 @@ impl BindingPortalAutomationImp {
         .unwrap();
 
         info!("start browser");
+
         // Spawn the handler loop — this is REQUIRED
         tokio::task::spawn(async move {
             loop {
@@ -151,6 +152,7 @@ impl BindingPortalAutomation for BindingPortalAutomationImp {
             self.exec_search_policy(&page, policy_input, member_id)
                 .await?;
             let result = self.exec_get_policy(&page).await.ok();
+            // TODO: raise error on rpa fail
             Ok(result)
         })
     }

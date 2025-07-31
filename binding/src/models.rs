@@ -1,7 +1,7 @@
 use serde::Serialize;
 use time::OffsetDateTime;
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Clone, Serialize)]
 pub struct GetPolicyResult {
     // กรมธรรม์เลขที่ :
     pub policy_ref: String,
@@ -10,4 +10,3 @@ pub struct GetPolicyResult {
     // วันสิ้นสุด :
     pub inactive_at: OffsetDateTime,
 }
-

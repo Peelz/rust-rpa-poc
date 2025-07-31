@@ -8,17 +8,13 @@ mod sys;
 use std::sync::Arc;
 
 use actix_web::{App, HttpServer};
-use chromiumoxide::cdp::browser_protocol::network::{Cookie, CookieParam};
-use google_cloud_pubsub::{
-    client::{Client, ClientConfig},
-    topic,
-};
+use chromiumoxide::cdp::browser_protocol::network::CookieParam;
+use google_cloud_pubsub::client::{Client, ClientConfig};
 use repo::AddPolicyRepoImp;
-use rpa::{BindingPortalAutomation, BindingPortalAutomationImp};
+use rpa::BindingPortalAutomationImp;
 use service::AddPolicyServiceImp;
-use sqlx::{PgPool, postgres::PgPoolOptions};
+use sqlx::postgres::PgPoolOptions;
 use sys::application_config::load_env;
-use tokio::{fs, io};
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
@@ -47,6 +43,7 @@ async fn main() -> std::io::Result<()> {
     let cookies = load_cookies(app_conf.session_path).await.unwrap();
     let rpa =
         BindingPortalAutomationImp::new(cookies, app_conf.portal_url).await;
+
     let service =
         AddPolicyServiceImp::new(Box::new(repo), Box::new(rpa), publisher);
 
