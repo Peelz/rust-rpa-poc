@@ -10,7 +10,11 @@ use common::utils::parse_buddhist_date;
 use futures::{StreamExt, future::BoxFuture};
 use log::info;
 
-use crate::{error::BindingError, models::GetPolicyResult, service};
+use crate::{
+    error::{self, BindingError},
+    models::GetPolicyResult,
+    service,
+};
 
 #[derive(Debug, Clone)]
 pub struct GroupPolicyRequestBinding {
@@ -28,7 +32,7 @@ pub trait BindingPortalAutomation {
 pub struct BindingPortalAutomationImp {
     browser: Browser,
     base_portal_url: String,
-    cookies: Vec<CookieParam>,
+    // cookies: Vec<CookieParam>,
 }
 
 impl BindingPortalAutomationImp {
@@ -39,8 +43,8 @@ impl BindingPortalAutomationImp {
         let (browser, mut handler) = Browser::launch(
             BrowserConfig::builder()
                 .no_sandbox()
-                // .with_head()
-                .new_headless_mode()
+                .with_head()
+                // .new_headless_mode()
                 .window_size(1024, 728)
                 .build()
                 .unwrap(),
@@ -56,11 +60,17 @@ impl BindingPortalAutomationImp {
                 let _ = handler.next().await.unwrap();
             }
         });
+        let page = browser.new_page(&base_portal_url).await.unwrap();
+        page.execute(SetCookiesParams::new(cookies))
+            .await
+            .inspect_err(|e| log::error!("set cookies failed {e}"))
+            .unwrap();
+
+        page.close().await;
 
         Self {
             browser,
             base_portal_url,
-            cookies,
         }
     }
 
@@ -117,6 +127,7 @@ impl BindingPortalAutomationImp {
             .attribute("value")
             .await?
             .unwrap_or_default();
+
         let inactive_at = page
             .find_xpath("/html/body/table/tbody/tr[2]/td[2]/table/tbody/tr[3]/td[2]/form/table/tbody/tr[7]/td[4]/input") 
             .await?
@@ -141,18 +152,21 @@ impl BindingPortalAutomation for BindingPortalAutomationImp {
     ) -> BoxFuture<Result<Option<GetPolicyResult>, BindingError>> {
         let url =
             format!("{}/eHospital/EnquiryPolicy.gt", self.base_portal_url);
-        let cookies = self.cookies.clone();
         Box::pin(async move {
             let page = self.browser.new_page(url).await?;
             let policy_input: Vec<&str> =
                 req.policy_holder_ref.split("-").collect();
             let member_id: Vec<&str> = req.insurred_member.split("-").collect();
 
-            page.execute(SetCookiesParams::new(cookies)).await?;
             self.exec_search_policy(&page, policy_input, member_id)
                 .await?;
+
             let result = self.exec_get_policy(&page).await.ok();
-            // TODO: raise error on rpa fail
+
+            if let Err(e) = page.close().await {
+                log::warn!("Failed to close page {:?}", e)
+            }
+            // let result = result.ok();
             Ok(result)
         })
     }

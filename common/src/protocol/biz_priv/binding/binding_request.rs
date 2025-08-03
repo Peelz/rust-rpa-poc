@@ -3,6 +3,7 @@ use serde::{Deserialize, Serialize};
 use super::{binding_data::BindingData, privilege::PrivilegeData};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct BindingRequestEvent {
     pub privilege_id: i32,
     pub binding_id: i32,

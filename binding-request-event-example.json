@@ -1,0 +1,31 @@
+{
+  "privilegeId": 12345,
+  "bindingId": 67890,
+  "accountId": 111213,
+  "profileId": 45678,
+  "acceptedConsentRef": "consent-ref-xyz",
+  "bindingData": {
+    "__type": "ThaiCitizenCard",
+    "citizenId": "1234567890123",
+    "orgId": 9876,
+    "orgName": "Example Corporation",
+    "customData": {
+      "memberNumber": "MB001",
+      "policyNumber": "POL001"
+    }
+  },
+  "encryptedBindingData": "<encrypted-data-goes-here>",
+  "encryptionKeyUrn": "projects/your-project/locations/global/keyRings/your-keyring/cryptoKeys/your-key",
+  "privilegeData": {
+    "providerId": 1,
+    "providerName": "Generali",
+    "providerAbbreviation": "GN",
+    "packageTypeId": 2,
+    "packageTypeName": "Gold",
+    "privilegeTypeId": 3,
+    "privilegeTypeName": "Health Insurance",
+    "privilegeDisplayName": "Generali Health Insurance Gold Package",
+    "privilegeFlowId": 4
+  },
+  "sessionId": "session-id-abc"
+}

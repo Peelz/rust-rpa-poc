@@ -1,7 +1,19 @@
 services:
-  pubsub-emulator:
+  postgres:
+    image: postgres:15
+    container_name: biz-priv-postgres
+    ports:
+      - "54324:5432"
+    environment:
+      - POSTGRES_DB=biz_priv_generali
+      - POSTGRES_USER=biz_priv_generali
+      - POSTGRES_PASSWORD=strongP@ssw0rd
+    volumes:
+      - ./database/psql/script:/docker-entrypoint-initdb.d
+      # - /database/psql/postgres-data:/var/lib/postgresql/data
+  biz-priv-pubsub-emulator:
     image: google/cloud-sdk:latest
-    container_name: pubsub-emulator
+    container_name: biz-priv-pubsub-emulator
     command: >
       gcloud beta emulators pubsub start
       --host-port=0.0.0.0:8085
@@ -9,4 +21,6 @@ services:
       - "8085:8085"
     environment:
       - PUBSUB_PROJECT_ID=demo-project
+volumes:
+  postgres-data:
 

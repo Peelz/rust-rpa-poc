@@ -1,30 +1,32 @@
 use chromiumoxide::{
     browser::{Browser, BrowserConfig},
-    cdp::browser_protocol::{network::Cookie, page::CaptureScreenshotFormat},
+    cdp::browser_protocol::page::CaptureScreenshotFormat,
     page::ScreenshotParams,
 };
 use chrono::Utc;
 use config::{ApplicationConfig, PortalConfig};
 use env_logger::Env;
-use futures::{StreamExt, future::ok};
+use futures::StreamExt;
 use std::io::Write;
 use std::{fs::File, path::Path};
 
-use log::{error, info};
+use log::{debug, error, info, warn};
 mod config;
 mod rpa;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    dotenvy::dotenv().inspect_err(|e| warn!("{e}")).ok();
+    env_logger::Builder::from_env(Env::default().default_filter_or("debug"))
+        .init();
     let app_conf: ApplicationConfig = envy::from_env()
         .expect("Failed to deserialize config from environment variables");
+
+    debug!("app config {:?}", app_conf);
 
     let portal_conf: PortalConfig = envy::prefixed("PORTAL_")
         .from_env()
         .expect("Failed to deserialize config from environment variables");
-
-    env_logger::Builder::from_env(Env::default().default_filter_or("debug"))
-        .init();
 
     if !Path::new(&app_conf.screenshot_path).exists() {
         panic!("screen path {} not exist", app_conf.screenshot_path)

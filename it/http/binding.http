@@ -1,0 +1,4 @@
+POST http://localhost:8888/v1/binding HTTP/1.1
+Content-Type: application/json
+
+< /Users/peelz/Workspace/biz-priv-insurance-generali/pubsub-request-example.json

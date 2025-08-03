@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use actix_web::{
     HttpResponse, ResponseError, Scope, http::StatusCode, post, web,
 };
@@ -9,7 +11,10 @@ use common::protocol::{
 use derive_more::{Display, Error};
 use log::error;
 
-use crate::{error::{AddPolicyError, BindingError}, service::AddPolicyServiceImp};
+use crate::{
+    error::BindingError,
+    service::AddPolicyServiceImp,
+};
 
 #[derive(Debug, Error, Display)]
 enum ErrorHandle {
@@ -20,7 +25,8 @@ enum ErrorHandle {
 }
 
 impl ResponseError for ErrorHandle {
-    fn error_response(&self) -> HttpResponse<actix_web::body::BoxBody> { HttpResponse::build(self.status_code()).body(self.to_string())
+    fn error_response(&self) -> HttpResponse<actix_web::body::BoxBody> {
+        HttpResponse::build(self.status_code()).body(self.to_string())
     }
     fn status_code(&self) -> actix_web::http::StatusCode {
         match *self {
@@ -33,7 +39,7 @@ impl ResponseError for ErrorHandle {
 #[post("/binding")]
 async fn binding_request_handle(
     body: web::Json<PubSubPushMessage>,
-    logic: web::Data<AddPolicyServiceImp>,
+    logic: web::Data<Arc<AddPolicyServiceImp>>,
 ) -> actix_web::Result<impl actix_web::Responder> {
     let decode = match BASE64_STANDARD.decode(&body.message.data) {
         Ok(data) => data,
@@ -49,10 +55,10 @@ async fn binding_request_handle(
         Ok(()) => Ok(HttpResponse::Ok()),
         Err(err) => {
             if let Some(e) = err.downcast_ref::<BindingError>() {
-                error!("Biz error: {}", err); // Debug format
+                error!("Biz error: {err}"); // Debug format
                 Ok(HttpResponse::Ok())
             } else {
-                error!("On Error: {:?}", err); // Debug format
+                error!("On Error: {err}"); // Debug format
                 Ok(HttpResponse::InternalServerError())
             }
         }
@@ -60,5 +66,5 @@ async fn binding_request_handle(
 }
 
 pub fn register() -> Scope {
-    web::scope("").service(binding_request_handle)
+    web::scope("v1").service(binding_request_handle)
 }

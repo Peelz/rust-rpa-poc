@@ -1,4 +1,5 @@
 use std::error::Error;
+use std::sync::Arc;
 
 use crate::error::{self, BindingError};
 use crate::repo::AddPolicyRepo;
@@ -28,15 +29,18 @@ impl BindingDataExt {
 }
 
 pub struct AddPolicyServiceImp {
-    repo: Box<dyn AddPolicyRepo>,
-    automation: Box<dyn BindingPortalAutomation>,
+    repo: Arc<dyn AddPolicyRepo + Send + Sync>,
+    automation: Arc<dyn BindingPortalAutomation + Send + Sync>,
     result_publisher: Publisher,
 }
 
 impl AddPolicyServiceImp {
     pub fn new(
-        repo: Box<dyn AddPolicyRepo>,
-        automation: Box<dyn BindingPortalAutomation>,
+        repo: Arc<dyn AddPolicyRepo + Send + Sync>,
+        automation: Arc<dyn BindingPortalAutomation + Send + Sync>,
+
+        // repo: Arc<dyn AddPolicyRepo>,
+        // automation: Arc<dyn BindingPortalAutomation>,
         result_publisher: Publisher,
     ) -> Self {
         Self {
@@ -61,7 +65,9 @@ impl AddPolicyServiceImp {
                 user_profile_id: event.profile_id,
             };
 
-        self.repo.add_binding_tx(user_iden, policy.clone()).await?;
+        self.repo
+            .add_binding_tx(event.binding_id, user_iden, policy.clone())
+            .await?;
 
         let binding_result_msg = match policy {
             Some(v) => BindingResult::CompletedBinding {

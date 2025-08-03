@@ -4,8 +4,10 @@ use super::privilege::PrivilegeData;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(tag = "type")]
+#[serde(rename_all = "camelCase")]
 pub enum BindingResult {
     #[serde(rename = "CompletedBinding")]
+    #[serde(rename_all = "camelCase")]
     CompletedBinding {
         binding_id: i32,
         privilege_id: i32,
@@ -20,6 +22,7 @@ pub enum BindingResult {
     },
 
     #[serde(rename = "RejectedBinding")]
+    #[serde(rename_all = "camelCase")]
     RejectedBinding {
         binding_id: i32,
         reason: RejectedReason,
@@ -28,6 +31,7 @@ pub enum BindingResult {
     },
 
     #[serde(rename = "FailedBinding")]
+    #[serde(rename_all = "camelCase")]
     FailedBinding {
         binding_id: i32,
         reason: FailedReason,

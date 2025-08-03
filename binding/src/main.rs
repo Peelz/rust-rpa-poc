@@ -7,56 +7,78 @@ mod service;
 mod sys;
 use std::sync::Arc;
 
-use actix_web::{App, HttpServer};
+use actix_web::{App, HttpServer, web};
 use chromiumoxide::cdp::browser_protocol::network::CookieParam;
+use env_logger::Env;
 use google_cloud_pubsub::client::{Client, ClientConfig};
+use log::warn;
 use repo::AddPolicyRepoImp;
 use rpa::BindingPortalAutomationImp;
 use service::AddPolicyServiceImp;
 use sqlx::postgres::PgPoolOptions;
-use sys::application_config::load_env;
+use sys::application_config::{ApplicationConfig, PostgresConfig};
+use tokio::fs;
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
-    let app_conf = load_env().unwrap();
+    dotenvy::dotenv()
+        .inspect_err(|e| warn!("dotenv loading {e}"))
+        .ok();
+
+    env_logger::Builder::from_env(Env::default().default_filter_or("info"))
+        .init();
+
+    let app_conf: ApplicationConfig = envy::from_env().unwrap();
+
+    let postgres_conf: PostgresConfig =
+        envy::prefixed("POSTGRES_").from_env().unwrap();
+
+    log::debug!("{:?}", postgres_conf.to_url());
 
     let pg_pool = Arc::new(
         PgPoolOptions::new()
             .max_connections(5)
-            .connect(&app_conf.postgres.to_url())
+            .connect(&postgres_conf.to_url())
             .await
             .unwrap(),
     );
 
     // Init gcp pubsub
-    let config = ClientConfig::default().with_auth().await.unwrap();
-    let client = Client::new(config).await.unwrap();
+    let pubsub_client = ClientConfig::default().with_auth().await.unwrap();
+    let client = Client::new(pubsub_client).await.unwrap();
     let topic = client.topic(&app_conf.gcp_binding_result_topic);
-    if app_conf.gcp_pubsub_emulator == true && topic.exists(None).await.unwrap()
-    {
+
+    if app_conf.pubsub_emulator_host.is_some() {
+        log::info!("Create topic for Pub/Sub Emualtor");
         topic.create(None, None).await.unwrap()
     }
 
     let publisher = topic.new_publisher(None);
 
-    let repo = AddPolicyRepoImp::new(pg_pool);
     let cookies = load_cookies(app_conf.session_path).await.unwrap();
-    let rpa =
-        BindingPortalAutomationImp::new(cookies, app_conf.portal_url).await;
+    let repo = Arc::new(AddPolicyRepoImp::new(pg_pool));
+    let rpa = Arc::new(
+        BindingPortalAutomationImp::new(cookies, app_conf.portal_url).await,
+    );
 
-    let service =
-        AddPolicyServiceImp::new(Box::new(repo), Box::new(rpa), publisher);
-
-    HttpServer::new(|| App::new().service(routes::register()))
-        .bind(("0.0.0.0", app_conf.http_server_port))?
-        .run()
-        .await
+    HttpServer::new(move || {
+        App::new()
+            .app_data(web::Data::new(Arc::new(AddPolicyServiceImp::new(
+                repo.clone(),
+                rpa.clone(),
+                publisher.clone(),
+            ))))
+            .service(routes::register())
+    })
+    .bind(("0.0.0.0", app_conf.http_server_port))?
+    .run()
+    .await
 }
 
 async fn load_cookies(
     path: String,
 ) -> Result<Vec<CookieParam>, Box<dyn std::error::Error>> {
-    todo!()
-    // let cookie_data = fs::read_to_string(path).await?;
-    // let cookies = serde_json::from_str::<Vec<Cookie>>(&cookie_data)?;
+    let cookie_data = fs::read_to_string(path).await?;
+    let cookies = serde_json::from_str::<Vec<CookieParam>>(&cookie_data)?;
+    Ok(cookies)
 }
