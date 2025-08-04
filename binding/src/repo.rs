@@ -6,11 +6,6 @@ use sqlx::{PgPool, types::Json};
 
 use crate::models::GetPolicyResult;
 
-pub struct UserIdentity {
-    pub account_id: i32,
-    pub profile_id: i32,
-}
-
 pub trait AddPolicyRepo {
     fn add_binding_tx(
         &self,
@@ -38,6 +33,7 @@ impl AddPolicyRepo for AddPolicyRepoImp {
         policy: Option<GetPolicyResult>,
     ) -> BoxFuture<'_, Result<(), Box<dyn Error + Send + Sync>>> {
         Box::pin(async move {
+            log::info!("Repo ex {policy:?}");
             sqlx::query("SELECT insert_policy ($1::int, $2::int, $3::int, $4)")
                 .bind(binding_id)
                 .bind(user_iden.user_profile_id as i64)

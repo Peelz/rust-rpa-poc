@@ -1,7 +1,7 @@
 use std::error::Error;
 use std::sync::Arc;
 
-use crate::error::{self, BindingError};
+use crate::error::BindingError;
 use crate::repo::AddPolicyRepo;
 use crate::rpa::{BindingPortalAutomation, GroupPolicyRequestBinding};
 use common::protocol::biz_priv::binding::binding_data::BindingData;
@@ -38,9 +38,6 @@ impl AddPolicyServiceImp {
     pub fn new(
         repo: Arc<dyn AddPolicyRepo + Send + Sync>,
         automation: Arc<dyn BindingPortalAutomation + Send + Sync>,
-
-        // repo: Arc<dyn AddPolicyRepo>,
-        // automation: Arc<dyn BindingPortalAutomation>,
         result_publisher: Publisher,
     ) -> Self {
         Self {
@@ -58,7 +55,12 @@ impl AddPolicyServiceImp {
             .into_request_binding()
             .map_err(|e| Box::new(BindingError::DataMissMatch))?;
 
-        let policy = self.automation.get_policy(binding_req).await?;
+        let policy = self
+            .automation
+            .get_policy(event.binding_id, binding_req)
+            .await
+            .inspect_err(|e| log::error!("automation error {e}"))?;
+
         let user_iden =
             common::protocol::iam::user_identity::PartialUserIdentity {
                 user_account_id: event.account_id,

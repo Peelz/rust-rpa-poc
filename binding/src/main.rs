@@ -47,8 +47,8 @@ async fn main() -> std::io::Result<()> {
     let pubsub_client = ClientConfig::default().with_auth().await.unwrap();
     let client = Client::new(pubsub_client).await.unwrap();
     let topic = client.topic(&app_conf.gcp_binding_result_topic);
-
-    if app_conf.pubsub_emulator_host.is_some() {
+    
+    if app_conf.pubsub_emulator_host.is_some() && topic.exists(None).await.is_err() {
         log::info!("Create topic for Pub/Sub Emualtor");
         topic.create(None, None).await.unwrap()
     }
@@ -58,7 +58,7 @@ async fn main() -> std::io::Result<()> {
     let cookies = load_cookies(app_conf.session_path).await.unwrap();
     let repo = Arc::new(AddPolicyRepoImp::new(pg_pool));
     let rpa = Arc::new(
-        BindingPortalAutomationImp::new(cookies, app_conf.portal_url).await,
+        BindingPortalAutomationImp::new(cookies, app_conf.portal_url, app_conf.screenshot_path).await,
     );
 
     HttpServer::new(move || {

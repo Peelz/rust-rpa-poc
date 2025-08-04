@@ -4,10 +4,14 @@ use thiserror::Error;
 
 #[derive(Debug, Error)]
 pub enum BindingError {
-    #[error("???")]
+    #[error("Data Miss Matching")]
     DataMissMatch,
-    #[error("???")]
+    #[error("Automation Failed")]
     AutomationFail(#[from] CdpError),
+    #[error("Internal Server Error")]
+    InternalServerError(#[from] anyhow::Error),
+    #[error("InvalidDataHandle")]
+    InvalidDataHandle,
 }
 
 #[derive(Debug)]

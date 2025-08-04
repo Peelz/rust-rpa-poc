@@ -22,12 +22,19 @@ impl PostgresConfig {
     }
 }
 
+fn default_false() -> bool {
+    false
+}
+
 #[derive(Debug, Clone, Deserialize)]
 pub struct ApplicationConfig {
     pub portal_url: String,
     pub session_path: String,
+    pub screenshot_path: String,
     pub http_server_port: u16,
     pub gcp_project_id: String,
     pub gcp_binding_result_topic: String,
     pub pubsub_emulator_host: Option<String>,
+    #[serde(default="default_false")]
+    pub headless_mode: bool
 }
