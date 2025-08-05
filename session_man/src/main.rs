@@ -22,7 +22,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let app_conf: ApplicationConfig = envy::from_env()
         .expect("Failed to deserialize config from environment variables");
 
-    debug!("app config {:?}", app_conf);
+    debug!("app config {app_conf:?}");
 
     let portal_conf: PortalConfig = envy::prefixed("PORTAL_")
         .from_env()
@@ -32,15 +32,16 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         panic!("screen path {} not exist", app_conf.screenshot_path)
     }
 
-    let (browser, mut handler) = Browser::launch(
-        BrowserConfig::builder()
-            .no_sandbox()
-            // .with_head()
-            .new_headless_mode()
-            .window_size(1024, 728)
-            .build()?,
-    )
-    .await?;
+    let mut browser_conf = BrowserConfig::builder()
+        .no_sandbox()
+        .new_headless_mode();
+
+    if let Some(path) = app_conf.browser_execute_path {
+        browser_conf = browser_conf.chrome_executable(Path::new(&path));
+    }
+
+    let (mut browser, mut handler) =
+        Browser::launch(browser_conf.build().unwrap()).await?;
 
     info!("start browser");
     // Spawn the handler loop — this is REQUIRED
@@ -49,6 +50,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             let _ = handler.next().await.unwrap();
         }
     });
+
     let page = browser.new_page(&portal_conf.url).await?;
 
     match rpa::run(portal_conf, page.clone()).await {
@@ -87,5 +89,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             .ok();
         }
     };
+    page.close().await?;
+    browser.close().await?;
     Ok(())
 }

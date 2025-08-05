@@ -16,4 +16,5 @@ pub struct PortalConfig {
 pub struct ApplicationConfig {
     pub session_storage_path: String,
     pub screenshot_path: String,
+    pub browser_execute_path: Option<String>
 }
