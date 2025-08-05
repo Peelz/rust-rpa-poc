@@ -3,12 +3,13 @@ use std::sync::Arc;
 
 use crate::error::BindingError;
 use crate::repo::AddPolicyRepo;
-use crate::rpa::{BindingPortalAutomation, GroupPolicyRequestBinding};
+use crate::rpa::{GetPolicyAutomation, GroupPolicyRequestBinding};
 use common::protocol::biz_priv::binding::binding_data::BindingData;
 use common::protocol::biz_priv::binding::binding_request::BindingRequestEvent;
 use common::protocol::biz_priv::binding::binding_result::{
     BindingResult, RejectedReason,
 };
+use common::protocol::generali::models::GeneraliPolicyInfo;
 use google_cloud_googleapis::pubsub::v1::PubsubMessage;
 use google_cloud_pubsub::publisher::Publisher;
 
@@ -30,14 +31,14 @@ impl BindingDataExt {
 
 pub struct AddPolicyServiceImp {
     repo: Arc<dyn AddPolicyRepo + Send + Sync>,
-    automation: Arc<dyn BindingPortalAutomation + Send + Sync>,
+    automation: Arc<dyn GetPolicyAutomation + Send + Sync>,
     result_publisher: Publisher,
 }
 
 impl AddPolicyServiceImp {
     pub fn new(
         repo: Arc<dyn AddPolicyRepo + Send + Sync>,
-        automation: Arc<dyn BindingPortalAutomation + Send + Sync>,
+        automation: Arc<dyn GetPolicyAutomation + Send + Sync>,
         result_publisher: Publisher,
     ) -> Self {
         Self {
@@ -72,17 +73,24 @@ impl AddPolicyServiceImp {
             .await?;
 
         let binding_result_msg = match policy {
-            Some(v) => BindingResult::CompletedBinding {
-                binding_id: event.binding_id,
-                privilege_id: event.privilege_id,
-                privilege_ref_id: Some(v.policy_ref),
-                account_id: event.account_id,
-                profile_id: event.profile_id,
-                started_at: Some(v.active_at.to_utc().unix_timestamp()),
-                expired_at: Some(v.inactive_at.to_utc().unix_timestamp()),
-                accepted_consent_ref: "".to_string(),
-                privilege_data: event.privilege_data,
-                legacy_company_id: None,
+            Some(GeneraliPolicyInfo::V1 {
+                policy_ref,
+                active_at,
+                inactive_at,
+                benefit,
+            }) => {
+                BindingResult::CompletedBinding {
+                            binding_id: event.binding_id,
+                            privilege_id: event.privilege_id,
+                            privilege_ref_id: Some(policy_ref),
+                            account_id: event.account_id,
+                            profile_id: event.profile_id,
+                            started_at: Some(active_at.to_utc().unix_timestamp()),
+                            expired_at: Some(inactive_at.to_utc().unix_timestamp()),
+                            accepted_consent_ref: "".to_string(),
+                            privilege_data: event.privilege_data,
+                            legacy_company_id: None,
+                        }
             },
             None => BindingResult::RejectedBinding {
                 binding_id: event.binding_id,
@@ -102,7 +110,7 @@ impl AddPolicyServiceImp {
 
         match awaiter.get().await {
             Ok(_) => log::info!("Publish binding result success"),
-            Err(e) => log::error!("Publish binding result fail {:?}", e),
+            Err(e) => log::error!("Publish binding result fail {e:?}"),
         }
         Ok(())
     }

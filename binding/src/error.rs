@@ -6,8 +6,8 @@ use thiserror::Error;
 pub enum BindingError {
     #[error("Data Miss Matching")]
     DataMissMatch,
-    #[error("Automation Failed")]
-    AutomationFail(#[from] CdpError),
+    #[error("Automation Fail {0}")]
+    AutomationFailure(#[from] AutomationError),
     #[error("Internal Server Error")]
     InternalServerError(#[from] anyhow::Error),
     #[error("InvalidDataHandle")]
@@ -27,18 +27,17 @@ impl From<RejectedReason> for AddPolicyError {
     }
 }
 
-// impl From<CdpError> for AddPolicyError {
-//     fn from(e: CdpError) -> Self {
-//         Self {
-//             cause: e.to_string(),
-//         }
-//     }
-// }
-
-// impl std::fmt::Display for AddPolicyError {
-//     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-//         write!(f, "{:?}", self)
-//     }
-// }
-
-// impl Error for AddPolicyError {}
+#[derive(Debug, Error)]
+pub enum AutomationError {
+    #[error("CdpError {0}")]
+    BrowserProtocolError(#[from] CdpError),
+    #[error("Element {target_name} not found, with {source}")]
+    ElementNotFoundWith {
+        target_name: String,
+        source: CdpError,
+    },
+    #[error("Element {target_name} not found")]
+    ElementNotFound { target_name: String },
+    #[error("Date parse fail {field}")]
+    DateParserFail { field: String },
+}

@@ -1,4 +1,21 @@
-POST http://localhost:8888/v1/binding HTTP/1.1
+POST /v1/binding HTTP/1.1
+Host: localhost:8888
 Content-Type: application/json
+Content-Length: 484
 
-< /Users/peelz/Workspace/biz-priv-insurance-generali/pubsub-request-example.json
+{
+    "message": {
+        "data": "{{aGeneraliBindingReqB64}}",
+        "attributes": {
+            "eventType": "SessionTerminated",
+            "source": "telemed-system",
+            "contentType": "application/json"
+        },
+        "messageId": "2070443601311540",
+        "message_id": "2070443601311540",
+        "orderingKey": "key",
+        "publishTime": "2021-02-26T19:13:55.749Z",
+        "publish_time": "2021-02-26T19:13:55.749Z"
+    },
+    "subscription": "string"
+}

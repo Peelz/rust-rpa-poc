@@ -1,22 +1,22 @@
 mod error;
-mod models;
 mod repo;
 mod routes;
 mod rpa;
 mod service;
 mod sys;
-use std::sync::Arc;
 
 use actix_web::{App, HttpServer, web};
-use chromiumoxide::cdp::browser_protocol::network::CookieParam;
+use chromiumoxide::{Browser, cdp::browser_protocol::network::CookieParam};
 use env_logger::Env;
+use futures::StreamExt;
 use google_cloud_pubsub::client::{Client, ClientConfig};
 use log::warn;
 use repo::AddPolicyRepoImp;
 use rpa::BindingPortalAutomationImp;
 use service::AddPolicyServiceImp;
 use sqlx::postgres::PgPoolOptions;
-use sys::application_config::{ApplicationConfig, PostgresConfig};
+use std::sync::Arc;
+use sys::config::{ApplicationConfig, PostgresConfig};
 use tokio::fs;
 
 #[actix_web::main]
@@ -33,6 +33,9 @@ async fn main() -> std::io::Result<()> {
     let postgres_conf: PostgresConfig =
         envy::prefixed("POSTGRES_").from_env().unwrap();
 
+    let browser_conf: sys::config::BrowserConfig =
+        envy::prefixed("BROWSER_").from_env().unwrap();
+
     log::debug!("{:?}", postgres_conf.to_url());
 
     let pg_pool = Arc::new(
@@ -47,8 +50,10 @@ async fn main() -> std::io::Result<()> {
     let pubsub_client = ClientConfig::default().with_auth().await.unwrap();
     let client = Client::new(pubsub_client).await.unwrap();
     let topic = client.topic(&app_conf.gcp_binding_result_topic);
-    
-    if app_conf.pubsub_emulator_host.is_some() && topic.exists(None).await.is_err() {
+
+    if app_conf.pubsub_emulator_host.is_some()
+        && topic.exists(None).await.is_err()
+    {
         log::info!("Create topic for Pub/Sub Emualtor");
         topic.create(None, None).await.unwrap()
     }
@@ -57,10 +62,36 @@ async fn main() -> std::io::Result<()> {
 
     let cookies = load_cookies(app_conf.session_path).await.unwrap();
     let repo = Arc::new(AddPolicyRepoImp::new(pg_pool));
+
+    log::debug!("Browser config: {browser_conf:?}");
+    let (browser, mut handler) =
+        Browser::launch(browser_conf.into()).await.unwrap();
+    // tokio::task::spawn(async move {
+    //     loop {
+    //         let _ = handler.next().await.unwrap();
+    //     }
+    // });
+    tokio::spawn(async move {
+        while let Some(result) = handler.next().await {
+            if let Err(err) = result {
+                log::error!("Browser handler error: {}", err);
+            }
+        }
+    });
+
+    log::info!("Initiate RPA component");
+
     let rpa = Arc::new(
-        BindingPortalAutomationImp::new(cookies, app_conf.portal_url, app_conf.screenshot_path).await,
+        BindingPortalAutomationImp::new(
+            browser,
+            cookies,
+            app_conf.portal_url,
+            app_conf.screenshot_path,
+        )
+        .await,
     );
 
+    log::info!("Starting service, :{}", app_conf.http_server_port);
     HttpServer::new(move || {
         App::new()
             .app_data(web::Data::new(Arc::new(AddPolicyServiceImp::new(

@@ -1,17 +1,18 @@
 use std::{error::Error, sync::Arc};
 
-use common::protocol::iam::user_identity::PartialUserIdentity;
+use common::protocol::{
+    generali::models::GeneraliPolicyInfo,
+    iam::user_identity::PartialUserIdentity,
+};
 use futures::future::BoxFuture;
 use sqlx::{PgPool, types::Json};
-
-use crate::models::GetPolicyResult;
 
 pub trait AddPolicyRepo {
     fn add_binding_tx(
         &self,
         binding_id: i32,
         user_iden: PartialUserIdentity,
-        policy: Option<GetPolicyResult>,
+        policy: Option<GeneraliPolicyInfo>,
     ) -> BoxFuture<Result<(), Box<dyn Error + Send + Sync>>>;
 }
 
@@ -30,7 +31,7 @@ impl AddPolicyRepo for AddPolicyRepoImp {
         &self,
         binding_id: i32,
         user_iden: PartialUserIdentity,
-        policy: Option<GetPolicyResult>,
+        policy: Option<GeneraliPolicyInfo>,
     ) -> BoxFuture<'_, Result<(), Box<dyn Error + Send + Sync>>> {
         Box::pin(async move {
             log::info!("Repo ex {policy:?}");
