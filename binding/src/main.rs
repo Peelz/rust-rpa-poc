@@ -16,7 +16,7 @@ use rpa::BindingPortalAutomationImp;
 use service::AddPolicyServiceImp;
 use sqlx::postgres::PgPoolOptions;
 use std::sync::Arc;
-use sys::config::{ApplicationConfig, PostgresConfig};
+use sys::config::{ApplicationConfig, BrowserConfig, PostgresConfig};
 use tokio::fs;
 
 #[actix_web::main]
@@ -33,7 +33,7 @@ async fn main() -> std::io::Result<()> {
     let postgres_conf: PostgresConfig =
         envy::prefixed("POSTGRES_").from_env().unwrap();
 
-    let browser_conf: sys::config::BrowserConfig =
+    let browser_conf: BrowserConfig =
         envy::prefixed("BROWSER_").from_env().unwrap();
 
     log::debug!("{:?}", postgres_conf.to_url());
@@ -63,27 +63,11 @@ async fn main() -> std::io::Result<()> {
     let cookies = load_cookies(app_conf.session_path).await.unwrap();
     let repo = Arc::new(AddPolicyRepoImp::new(pg_pool));
 
-    log::debug!("Browser config: {browser_conf:?}");
-    let (browser, mut handler) =
-        Browser::launch(browser_conf.into()).await.unwrap();
-    // tokio::task::spawn(async move {
-    //     loop {
-    //         let _ = handler.next().await.unwrap();
-    //     }
-    // });
-    tokio::spawn(async move {
-        while let Some(result) = handler.next().await {
-            if let Err(err) = result {
-                log::error!("Browser handler error: {}", err);
-            }
-        }
-    });
-
     log::info!("Initiate RPA component");
 
     let rpa = Arc::new(
         BindingPortalAutomationImp::new(
-            browser,
+            browser_conf.into(),
             cookies,
             app_conf.portal_url,
             app_conf.screenshot_path,

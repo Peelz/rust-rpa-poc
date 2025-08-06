@@ -13,7 +13,7 @@ use common::{
     protocol::generali::models::{BeneftRecordV1, GeneraliPolicyInfo},
     utils::parse_buddhist_date,
 };
-use futures::future::BoxFuture;
+use futures::{future::BoxFuture, StreamExt};
 use scraper::{Html, Selector};
 use tokio::time::sleep;
 
@@ -41,19 +41,29 @@ pub struct BindingPortalAutomationImp {
 
 impl BindingPortalAutomationImp {
     pub(crate) async fn new(
-        browser: Browser,
+        browser_conf: BrowserConfig,
         cookies: Vec<CookieParam>,
         base_portal_url: String,
         screenshot_path: String,
     ) -> Self {
+        log::debug!("Browser config: {browser_conf:?}");
+
+        let (browser, mut handler) =
+            Browser::launch(browser_conf).await.unwrap();
+
+        tokio::task::spawn(async move {
+            loop {
+                let _ = handler.next().await.unwrap();
+            }
+        });
+
         log::debug!("Preaparing page {base_portal_url}");
         let page = browser.new_page(&base_portal_url).await.unwrap();
-        log::debug!("Setting CookieParam");
+        log::debug!("Setting CookieParams {}", cookies.len());
         page.execute(SetCookiesParams::new(cookies))
             .await
             .inspect_err(|e| log::error!("set cookies failed {e}"))
             .unwrap();
-
         let _ = page.close().await;
 
         Self {

@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-chromiumoxide = { version = "0.7.0", features = ["tokio-runtime"] }
+spider_chrome = { version = "2" }
 sqlx = { version = "0.8.6", features = ["postgres", "time", "runtime-tokio"] }
 actix-web = "4.11.0"
 serde = "1.0.219"

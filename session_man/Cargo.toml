@@ -5,10 +5,7 @@ edition = "2024"
 
 [dependencies]
 actix-web = "4.11.0"
-chromiumoxide = { version = "0.7.0", features = [
-  "_fetcher-native-tokio",
-  "tokio-runtime",
-] }
+spider_chrome = { version = "2" }
 chrono = "0.4.41"
 dotenvy = "0.15.7"
 env_logger = "0.11.8"

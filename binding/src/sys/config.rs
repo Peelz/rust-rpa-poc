@@ -10,6 +10,8 @@ pub struct BrowserConfig {
     pub with_headless_mode: bool,
 
     pub execute_path: Option<String>,
+
+    pub user_data_dir: Option<String>,
 }
 
 impl From<BrowserConfig> for chromiumoxide::BrowserConfig {
@@ -21,13 +23,16 @@ impl From<BrowserConfig> for chromiumoxide::BrowserConfig {
         builder = if val.with_headless_mode {
             // builder.new_headless_mode()
             builder.headless_mode(HeadlessMode::True)
-
         } else {
             builder.with_head()
         };
 
         if let Some(ref path) = val.execute_path {
             builder = builder.chrome_executable(Path::new(path));
+        }
+
+        if let Some(ref user_data) = val.user_data_dir {
+            builder = builder.user_data_dir(Path::new(user_data));
         }
         log::debug!("browser config = {builder:?}");
         builder.build().unwrap()
